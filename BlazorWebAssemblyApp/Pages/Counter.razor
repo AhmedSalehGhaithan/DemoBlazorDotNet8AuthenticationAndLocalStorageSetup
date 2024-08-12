@@ -1,0 +1,37 @@
+﻿@page "/counter"
+@inject IJSRuntime js
+<h1>Counter</h1>
+<p>Current count: @CurrentCount</p>
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int currentCounts = 0;
+    public int CurrentCount
+    {
+        get => currentCounts;
+        set
+        {
+            if (currentCounts != value)
+            {
+                currentCounts = value;
+                js.InvokeVoidAsync("blazorLocalStorage.set", nameof(CurrentCount), currentCounts);
+            }
+        }
+    }
+
+    private void IncrementCount()
+    {
+        CurrentCount++;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            int c = await js.InvokeAsync<int>(
+            "blazorLocalStorage.get", nameof(CurrentCount));
+            currentCounts = c;
+        }
+        catch { }
+    }
+}

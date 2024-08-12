@@ -1,0 +1,63 @@
+﻿@page "/login"
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="loginUser" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator/>
+                <ValidationSummary/>
+                @if (!string.IsNullOrEmpty(message))
+                {
+                    <div class="alert alert-warning">@message</div>
+                }
+                <div class="card">
+                    <div class="card-header">Please login</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <InputText @bind-Value="loginUser.Email" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label"> Password</label>
+                            <InputText @bind-Value="loginUser.Password" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginUser loginUser { get; set; } = new();
+    private string message;
+    private async Task HandleLogin()
+    {
+        message = string.Empty;
+        var response = await _httpClient.PostAsJsonAsync("login", loginUser);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            message = "Invalid Credential";
+            return;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        if (string.IsNullOrEmpty(result!.AccessToken)) return;
+
+        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.AccessToken);
+        var getUserClaim = await _httpClient.GetAsync("manage/info");
+        if (!getUserClaim.IsSuccessStatusCode) return;
+
+        var userdetails = await getUserClaim.Content.ReadFromJsonAsync<UserDetails>();
+        var authenticationmodel = new AuthenticationModel { Token = result.AccessToken, RefreshToken = result.RefreshToken, Username = userdetails!.Email };
+
+        var customauthstateprovider = (CustomAuthenticationStateProvider)_authStateProvider;
+        await customauthstateprovider.UpdateAuthenticationState(authenticationmodel);
+        _navigationManager.NavigateTo("/");
+
+    }
+}

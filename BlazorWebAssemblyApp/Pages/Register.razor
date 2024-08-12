@@ -1,0 +1,51 @@
+﻿@page "/register"
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="registerUser" OnValidSubmit="HandelRegister">
+                <DataAnnotationsValidator/>
+                <ValidationSummary/>
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <div class="alert alert-warning">@Message</div>
+                }
+
+                <div class="card">
+                    <div class="card-header">Please Register</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <InputText @bind-Value="registerUser.Email" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label"> Password</label>
+                            <InputText @bind-Value="registerUser.Password" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private RegisterUser registerUser { get; set; } = new();
+    private string? Message;
+
+    private async Task HandelRegister()
+    {
+        Message = string.Empty;
+        var response = await _httpClient.PostAsJsonAsync("register", registerUser);
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = "Error occurred";
+            return;
+        }
+        registerUser = new();
+        _navigationManager.NavigateTo("/login");
+    }
+}
